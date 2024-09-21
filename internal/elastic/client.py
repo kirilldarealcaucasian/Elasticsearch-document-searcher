@@ -1,3 +1,5 @@
+import time
+
 from elasticsearch import AsyncElasticsearch
 from typing_extensions import Union
 
@@ -23,35 +25,53 @@ class ElasticClient:
             return cls._instance
         return cls._instance
 
-    def __init__(self, conn_addr: str):
-        self._conn_addr: str = conn_addr
+    def __init__(self, con_addr: str):
+        self._conn_addr = con_addr
         self.__client: Union[AsyncElasticsearch, None] = None
 
     @property
-    def get_client(self):
+    def get_client(self) -> AsyncElasticsearch:
         return self.__client
 
-    async def connect(self) -> AsyncElasticsearch:
+    async def connect(self) -> Union[AsyncElasticsearch, None]:
         """creates connection to elasticsearch"""
         if self.get_client is not None:
             return self.get_client
         try:
             self.__client = AsyncElasticsearch(
-                self._conn_addr
+                self._conn_addr,
+                retry_on_timeout=True,
+                max_retries=3
             )
-            info = await self.__client.info()
-            logger.info(
-                msg=f"successful connection to elasticsearch: {info.body}"
+            retrials = 0
+            max_retrials = 10
+            while retrials <= max_retrials:
+                retrials += 1
+                resp = await self.__client.ping()
+                if resp:
+                    logger.info(msg="successful connection to elasticsearch")
+                    return self.__client
+                elif not resp:
+                    logger.error(
+                        msg="failed to connect to elasticsearch (ping failed)",
+                    )
+                    time.sleep(5)
+                    continue
+            self.__client = None
+            logger.error(
+                msg="connection to elasticsearch hasn't been established"
             )
             return self.__client
         except Exception as e:
             logger.error(
-                msg="Failed to connect to elasticsearch",
-                exc_info=True
+                msg="failed to connect to elasticsearch",
+                exc_info=str(e)
             )
+            if self.__client:
+                await self.__client.close()
             raise FailedToConnectErr(
-                detail=str(e)
-            )
+                        detail="failed to connect to elasticsearch"
+                    )
 
     async def disconnect(self) -> None:
         """closes connection to elasticsearch"""
@@ -64,5 +84,5 @@ class ElasticClient:
 
 # create elastic client
 els_client = ElasticClient(
-    conn_addr=settings.CONNECTION_STR
+    con_addr=settings.ELASTIC_CONNECTION_URL
 )

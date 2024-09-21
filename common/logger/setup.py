@@ -1,12 +1,12 @@
-from logging import getLogger, StreamHandler, Formatter, DEBUG
-
+from logging import getLogger, StreamHandler, Formatter
+from common.config import settings
 
 __all__ = (
     "logger",
 )
 
 logger = getLogger(__name__)
-logger.setLevel(DEBUG)
+logger.setLevel(settings.LOG_LEVEL)
 
 
 class CustomFormatter(Formatter):
@@ -16,11 +16,17 @@ class CustomFormatter(Formatter):
         message = record.getMessage()
         path = record.pathname
         line = record.lineno
+        exc_text = record.exc_text
+        exc_info = record.exc_info
+        extras = ', '.join(f"{k}={v}" for k, v in record.__dict__.items() if k not in [
+            'args', 'levelname', 'levelno', 'lineno', 'pathname', 'filename', 'module', 'exc_info', 'msg', 'exc_text', 'name', 'process', 'processName', 'thread', 'threadName', 'stack_info', 'func_name', 'created', 'msecs', 'relativeCreated', 'funcName'
+        ]
+                           )
 
-        white_text = "\033[97m"
-        reset_text = "\033[0m"
+        blue_text = "\033[94m"
+        reset_color = "\033[0m"
 
-        return f"{white_text}{timestamp} [{level}] {path}[line:{line}]: {message}{reset_text}"
+        return f"""{blue_text}{timestamp} [{level}] {path}[line:{line}]: {message}{reset_color} {exc_text if exc_text else ''} {exc_info if exc_info else ''} {'extra: ' + extras if extras else ''}"""
 
 
 # setup logger

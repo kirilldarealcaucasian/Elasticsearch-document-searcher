@@ -1,5 +1,7 @@
 import csv
 import json
+import uuid
+
 from common.logger import logger
 
 
@@ -10,6 +12,7 @@ def convert_from_csv_to_json(csv_file_path: str, output_file_path: str):
             data = []
             for row in reader:
                 row["text"] = row["text"].replace("\n", "")
+                row["id"] = str(uuid.uuid4())  # adds id to each json
                 data.append(row)
     except OSError as e:
         logger.warning(
