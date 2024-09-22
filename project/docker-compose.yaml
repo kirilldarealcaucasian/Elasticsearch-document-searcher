@@ -9,6 +9,8 @@ services:
     depends_on:
       - elasticsearch
       - db
+    env_file:
+      - ../common/config/.env
 
   elasticsearch:
     image: elasticsearch:8.8.0

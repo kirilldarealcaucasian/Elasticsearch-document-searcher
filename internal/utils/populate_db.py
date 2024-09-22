@@ -1,15 +1,14 @@
 import json
-from internal.storage import db_client
-from sqlalchemy import insert
-from internal.posts.orm_models import Post
 from datetime import datetime
-from common.logger import logger
+
+from sqlalchemy import insert
 from sqlalchemy.exc import SQLAlchemyError
 
+from common.logger import logger
+from internal.posts.orm_models import Post
+from internal.storage import db_client
 
-__all__ = (
-    "populate_db",
-)
+__all__ = ("populate_db",)
 
 
 def object_hook(obj: dict):
@@ -19,14 +18,13 @@ def object_hook(obj: dict):
     """
     obj = obj.copy()
     rubrics: str = obj.get("rubrics")
-    fixed_rubrics = rubrics.replace("'", '"')  # json requires double quotes for string literals
-    deserialized_rubrics = json.loads(
-        fixed_rubrics
-    )  # conversion
+    fixed_rubrics = rubrics.replace(
+        "'", '"'
+    )  # json requires double quotes for string literals
+    deserialized_rubrics = json.loads(fixed_rubrics)  # conversion
     obj["rubrics"] = deserialized_rubrics
     obj["created_date"] = datetime.strptime(
-        obj["created_date"],
-        "%d.%m.%Y %H:%M"
+        obj["created_date"], "%d.%m.%Y %H:%M"
     )  # convert from string representation to datetime object
     return obj
 
@@ -37,24 +35,22 @@ async def populate_db(path):
         with open(path, "rt", encoding="utf-8") as f:
             data = json.load(f, object_hook=object_hook)
     except (OSError, Exception, FileNotFoundError) as e:
-        if type(e) == OSError:
+        if type(e) is OSError:
             logger.error(
                 msg="failed to open the file",
                 exc_info=str(e),
-                extra={"file_path": path}
+                extra={"file_path": path},
             )
             return
-        elif type(e) == FileNotFoundError:
+        elif type(e) is FileNotFoundError:
             logger.error(
-                msg="failed to populate db: file wasn't found (check correctness of file path)",
+                msg="failed to populate db: file wasn't found (check correctness of file path)",  # noqa
                 exc_info=str(e),
-                extra={"file_path": path}
+                extra={"file_path": path},
             )
             return
         else:
-            logger.error(
-                msg="failed to deserialize file"
-            )
+            logger.error(msg="failed to deserialize file")
             return
 
     async with db_client.session as session:

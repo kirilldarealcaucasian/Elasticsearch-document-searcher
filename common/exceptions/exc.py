@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 
 
-class FailedToConnectErr(ConnectionError):
+class FailedToConnectError(ConnectionError):
     def __init__(self, detail: str):
         self._detail = detail
 
@@ -9,7 +9,7 @@ class FailedToConnectErr(ConnectionError):
         return f"Failed to connect: {self._detail}"
 
 
-class AlreadyExistsErr(HTTPException):
+class AlreadyExistsError(HTTPException):
     def __init__(self, detail: str = "Entity already exists"):
         super().__init__(
             detail=detail,
@@ -17,11 +17,9 @@ class AlreadyExistsErr(HTTPException):
         )
 
 
-class NotFoundErr(HTTPException):
+class NotFoundError(HTTPException):
     def __init__(self, detail: str = "Entity does not exist"):
         super().__init__(
             detail=detail,
             status_code=status.HTTP_404_NOT_FOUND,
         )
-
-

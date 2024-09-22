@@ -1,7 +1,11 @@
 __all__ = (
-    "FailedToConnectErr",
-    "AlreadyExistsErr",
-    "NotFoundErr",
+    "FailedToConnectError",
+    "AlreadyExistsError",
+    "NotFoundError",
 )
 
-from .exc import FailedToConnectErr, AlreadyExistsErr, NotFoundErr
+from .exc import (
+    AlreadyExistsError,
+    FailedToConnectError,
+    NotFoundError,
+)

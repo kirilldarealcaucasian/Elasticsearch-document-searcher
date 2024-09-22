@@ -5,5 +5,5 @@ __all__ = (
     "els_manager",
 )
 
-from .client import els_client, ElasticClient
+from .client import ElasticClient, els_client
 from .elasticsearch_manager import ElasticschManager, els_manager

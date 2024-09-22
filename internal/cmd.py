@@ -1,74 +1,53 @@
-import uvicorn
-import os
-
 from contextlib import asynccontextmanager
 
+import uvicorn
 from elasticsearch import AsyncElasticsearch
-from fastapi import FastAPI, Request, HTTPException, status
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from common.config import settings
-from common.exceptions import AlreadyExistsErr
-from internal.elastic import els_client
-from internal.handlers import router as posts_router
-from internal.elastic import (
-    els_manager
-)
+from common.exceptions import AlreadyExistsError
 from common.logger import logger
-from internal.storage import db_client
-from internal.posts.orm_models import Base
-from internal.utils import populate_db
+from internal.elastic import els_client, els_manager
+from internal.handlers import router as posts_router
+from internal.utils import create_tables, populate_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """performs set-up logic before application has been started"""
-    els_con: AsyncElasticsearch = await els_client.connect()  # connect to elasticsearch
-    is_setup = os.environ.get("IS_SETUP")
-    if is_setup == "0":  # if app is launching for the first time
+    els_con: AsyncElasticsearch = (
+        await els_client.connect()
+    )  # connect to elasticsearch
+    await create_tables()
+    await populate_db(path=settings.DATA_CFG.POSTS_DATA_JSON)  # inserts data
+    if els_con:
         try:
-            async with db_client._engine.begin() as con:  # create tables
-                await con.run_sync(Base.metadata.drop_all)
-                await con.run_sync(Base.metadata.create_all)
-                logger.info("tables have been created")
-        except Exception as e:
-            logger.error(
-                msg="failed to create tables",
-                exc_info=str(e)
-            )
-        await populate_db(path=settings.DATA_CFG.POSTS_DATA_JSON)  # inserts data
-
-        if els_con:
-            try:
-                _ = await els_manager.create_index(
-                    elastic_client=els_con,
-                    index_name=settings.ELASTIC_POSTS_INDEX_NAME
-                )  # create index
-            except AlreadyExistsErr:
-                pass
-            await els_manager.bulk_add_data(
+            _ = await els_manager.create_index(
                 elastic_client=els_con,
-                data_path=settings.DATA_CFG.POSTS_DATA_JSON
-                )  # add data to index
-        os.environ["IS_SETUP"] = "1"
+                index_name=settings.ELASTIC_POSTS_INDEX_NAME,
+            )  # create index
+        except AlreadyExistsError:
+            pass
+        await els_manager.bulk_add_data(
+            elastic_client=els_con, data_path=settings.DATA_CFG.POSTS_DATA_JSON
+        )  # add data to index
     yield
     if els_con:
         await els_con.close()
 
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(
-    router=posts_router
-)
+app.include_router(router=posts_router)
 
 
 app.add_middleware(
-    CORSMiddleware, # noqa
+    CORSMiddleware,  # noqa
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
 

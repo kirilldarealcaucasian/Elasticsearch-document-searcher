@@ -1,17 +1,13 @@
-import time
+import asyncio
 
 from elasticsearch import AsyncElasticsearch
 from typing_extensions import Union
 
-from common.logger import logger
-from common.exceptions import FailedToConnectErr
 from common.config import settings
+from common.exceptions import FailedToConnectError
+from common.logger import logger
 
-
-__all__ = (
-    "els_client",
-    "ElasticClient"
-)
+__all__ = ("els_client", "ElasticClient")
 
 
 class ElasticClient:
@@ -39,9 +35,7 @@ class ElasticClient:
             return self.get_client
         try:
             self.__client = AsyncElasticsearch(
-                self._conn_addr,
-                retry_on_timeout=True,
-                max_retries=3
+                self._conn_addr, retry_on_timeout=True, max_retries=3
             )
             retrials = 0
             max_retrials = 10
@@ -55,7 +49,7 @@ class ElasticClient:
                     logger.error(
                         msg="failed to connect to elasticsearch (ping failed)",
                     )
-                    time.sleep(5)
+                    await asyncio.sleep(5)
                     continue
             self.__client = None
             logger.error(
@@ -64,25 +58,14 @@ class ElasticClient:
             return self.__client
         except Exception as e:
             logger.error(
-                msg="failed to connect to elasticsearch",
-                exc_info=str(e)
+                msg="failed to connect to elasticsearch", exc_info=str(e)
             )
             if self.__client:
                 await self.__client.close()
-            raise FailedToConnectErr(
-                        detail="failed to connect to elasticsearch"
-                    )
-
-    async def disconnect(self) -> None:
-        """closes connection to elasticsearch"""
-        if self.__client is not None:
-            logger.info("closing elasticsearch connection")
-            await self.__client.close()
-            self.__client = None
-        logger.warning("there is no open connection to close")
+            raise FailedToConnectError(
+                detail="failed to connect to elasticsearch"
+            )
 
 
 # create elastic client
-els_client = ElasticClient(
-    con_addr=settings.ELASTIC_CONNECTION_URL
-)
+els_client = ElasticClient(con_addr=settings.ELASTIC_CONNECTION_URL)

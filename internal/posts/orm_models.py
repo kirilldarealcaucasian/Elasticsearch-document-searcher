@@ -1,8 +1,9 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import ARRAY, Integer, String, Text, Date, UUID as UUID_alchemy
-from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
+from sqlalchemy import ARRAY, Date, String, Text
+from sqlalchemy import UUID as UUID_alchemy  # noqa
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):

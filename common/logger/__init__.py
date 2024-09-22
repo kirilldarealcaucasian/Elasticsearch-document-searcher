@@ -1,5 +1,3 @@
-__all__ = (
-    "logger",
-)
+__all__ = ("logger",)
 
 from .setup import logger

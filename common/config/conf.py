@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     DB_NAME: str
 
     @property
-    def ELASTIC_CONNECTION_URL(cls) -> str: # noqa
+    def ELASTIC_CONNECTION_URL(cls) -> str:  # noqa
         return f"http://{cls.ELASTIC_HOST}:{cls.ELASTIC_PORT}"
 
     @property
@@ -38,7 +38,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-
-
-
-
